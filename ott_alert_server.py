@@ -27,13 +27,18 @@ logger = logging.getLogger(__name__)
 alerts_history = []
 
 def is_market_open(now=None):
+    """Check if market is open (9:00 AM to 3:30 PM IST, Monday to Friday)"""
     if now is None:
         now = datetime.now(pytz.timezone('Asia/Kolkata'))
-    # Monday = 0, Sunday = 6
-    if now.weekday() >= 5:
+    
+    # Check if it's a weekday (Monday=0, Sunday=6)
+    if now.weekday() >= 5:  # Saturday=5, Sunday=6
         return False
-    market_open = now.replace(hour=9, minute=15, second=0, microsecond=0)
+    
+    # Market hours: 9:00 AM to 3:30 PM
+    market_open = now.replace(hour=9, minute=0, second=0, microsecond=0)
     market_close = now.replace(hour=15, minute=30, second=0, microsecond=0)
+    
     return market_open <= now <= market_close
     
 def get_stock_data(symbol: str, period: str = "5d", interval: str = "30m") -> Optional[pd.DataFrame]:
@@ -492,14 +497,27 @@ def main():
     logger.info("Starting OTT Alert Server")
     while True:
         now = datetime.now(pytz.timezone('Asia/Kolkata'))
+        
+        # Wait for market to open
         while not is_market_open(now):
             logger.info("Market is closed. Waiting for market to open...")
             time.sleep(60)
             now = datetime.now(pytz.timezone('Asia/Kolkata'))
-        logger.info(f"Starting new scan at {datetime.now()}")
+        
+        # Check if we're still in market hours before starting scan
+        if not is_market_open(now):
+            continue
+            
+        logger.info(f"Starting new scan at {now.strftime('%Y-%m-%d %H:%M:%S')}")
         alerts_found = 0
         
         for symbol in watchlist:
+            # Check if market is still open before processing each symbol
+            current_time = datetime.now(pytz.timezone('Asia/Kolkata'))
+            if not is_market_open(current_time):
+                logger.info("Market has closed during scan. Stopping current scan.")
+                break
+                
             try:
                 data = get_stock_data(symbol, period="5d", interval="30m")
                 
@@ -533,7 +551,13 @@ def main():
             except Exception as e:
                 logger.error(f"Error processing {symbol}: {str(e)}")
         
-        logger.info(f"Scan completed. Found {alerts_found} alerts.")
+        # Check if market is still open after completing the scan
+        end_time = datetime.now(pytz.timezone('Asia/Kolkata'))
+        if not is_market_open(end_time):
+            logger.info(f"Scan completed at {end_time.strftime('%Y-%m-%d %H:%M:%S')}. Market has closed. Found {alerts_found} alerts.")
+            continue
+        
+        logger.info(f"Scan completed at {end_time.strftime('%Y-%m-%d %H:%M:%S')}. Found {alerts_found} alerts.")
         logger.info(f"Sleeping for {scan_interval} seconds...")
         time.sleep(scan_interval)
 
