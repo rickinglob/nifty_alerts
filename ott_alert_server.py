@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 import logging
 from typing import Tuple, Optional
 import warnings
+import pytz
 warnings.filterwarnings('ignore')
 
 # Configure logging
@@ -25,6 +26,16 @@ logger = logging.getLogger(__name__)
 # Initialize alerts history
 alerts_history = []
 
+def is_market_open(now=None):
+    if now is None:
+        now = datetime.now(pytz.timezone('Asia/Kolkata'))
+    # Monday = 0, Sunday = 6
+    if now.weekday() >= 5:
+        return False
+    market_open = now.replace(hour=9, minute=15, second=0, microsecond=0)
+    market_close = now.replace(hour=15, minute=30, second=0, microsecond=0)
+    return market_open <= now <= market_close
+    
 def get_stock_data(symbol: str, period: str = "5d", interval: str = "30m") -> Optional[pd.DataFrame]:
     """
     Fetch stock data from Yahoo Finance with error handling
@@ -480,6 +491,11 @@ def main():
     
     logger.info("Starting OTT Alert Server")
     while True:
+        now = datetime.now(pytz.timezone('Asia/Kolkata'))
+        while not is_market_open(now):
+            logger.info("Market is closed. Waiting for market to open...")
+            time.sleep(60)
+            now = datetime.now(pytz.timezone('Asia/Kolkata'))
         logger.info(f"Starting new scan at {datetime.now()}")
         alerts_found = 0
         
