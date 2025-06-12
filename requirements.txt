@@ -1,0 +1,9 @@
+yfinance
+pandas
+numpy
+smtplib
+email
+time
+datetime
+logging
+typing
