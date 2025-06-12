@@ -21,18 +21,6 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
-
-# Load configuration
-def load_config(config_file='config.json') -> dict:
-    try:
-        with open(config_file, 'r') as f:
-            config = json.load(f)
-        logger.info("Configuration loaded successfully")
-        return config
-    except Exception as e:
-        logger.error(f"Failed to load config: {str(e)}")
-        raise
-
 # Initialize alerts history
 alerts_history = []
 
