@@ -492,7 +492,7 @@ def main():
   }
     ott_period = 5
     ott_percent = 1.5
-    scan_interval = 300
+    scan_interval = 900
     
     logger.info("Starting OTT Alert Server")
     while True:
