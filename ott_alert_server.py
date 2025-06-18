@@ -373,7 +373,7 @@ def main():
         # Wait for market to open
         while not is_market_open(now):
             logger.info("Market is closed. Waiting for market to open...")
-            time.sleep(300)
+            time.sleep(900)
             now = datetime.now(pytz.timezone('Asia/Kolkata'))
         
         # Check if we're still in market hours before starting scan
